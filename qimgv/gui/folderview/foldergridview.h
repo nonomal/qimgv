@@ -36,6 +36,7 @@ public slots:
     void setThumbnailSize(int newSize);
     void setShowLabels(bool mode);
     virtual void focusOn(int index) override;
+    virtual void focusOnSelection() override;
     virtual void setDragHover(int index) override;
 
 private:
@@ -43,7 +44,6 @@ private:
     QGraphicsWidget holderWidget;
     int shiftedCol;
     void scrollToCurrent();
-    void scrollToItem(int index);
     int lastDragTarget = -1;
 
 private slots:
@@ -58,7 +58,6 @@ protected:
     void setupLayout();
     ThumbnailWidget *createThumbnailWidget() override;
     void updateLayout() override;
-    void ensureSelectedItemVisible() override;
     virtual void fitSceneToContents() override;
 
     void keyPressEvent(QKeyEvent *event) override;

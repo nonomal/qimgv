@@ -37,7 +37,7 @@ public:
     ImageViewerV2(QWidget* parent = nullptr);
     ~ImageViewerV2();
     virtual ImageFitMode fitMode() const;
-    virtual QRect scaledRect() const;
+    virtual QRect scaledRectR() const;
     virtual float currentScale() const;
     virtual QSize sourceSize() const;
     virtual void showImage(std::unique_ptr<QPixmap> _pixmap);
@@ -46,13 +46,17 @@ public:
     virtual bool isDisplaying() const;
 
     virtual bool imageFits() const;
+    bool scaledImageFits() const;
     virtual ScalingFilter scalingFilter() const;
     virtual QWidget *widget();
     bool hasAnimation() const;
 
-    QSize scaledSize() const;
+    QSize scaledSizeR() const;
 
     void pauseResume();
+    void enableDrags();
+    void disableDrags();
+
 signals:
     void scalingRequested(QSize, ScalingFilter);
     void scaleChanged(qreal);
@@ -69,6 +73,7 @@ public slots:
     virtual void setFitOriginal();
     virtual void setFitWidth();
     virtual void setFitWindow();
+    virtual void setFitWindowStretch();
     virtual void zoomIn();
     virtual void zoomOut();
     virtual void zoomInCursor();
@@ -84,13 +89,11 @@ public slots:
     virtual void setExpandImage(bool mode);
     virtual void show();
     virtual void hide();
-
-    virtual void toggleTransparencyGrid();
-
     virtual void setFilterNearest();
     virtual void setFilterBilinear();
     virtual void setScalingFilter(ScalingFilter filter);
     void setLoopPlayback(bool mode);
+    void toggleTransparencyGrid();
 
     void nextFrame();
     void prevFrame();
@@ -109,15 +112,20 @@ protected:
     virtual void resizeEvent(QResizeEvent* event);
     void wheelEvent(QWheelEvent *event);
     void showEvent(QShowEvent *event);
+    void drawBackground(QPainter *painter, const QRectF &rect);
 
+    bool eventFilter(QObject *o, QEvent *ev);
 protected slots:
     void onAnimationTimer();
+
 private slots:
     void requestScaling();
     void scrollToX(int x);
     void scrollToY(int y);
-
+    void centerOnPixmap();
     void onScrollTimelineFinished();
+
+    void onDPRChanged();
 private:
     QGraphicsScene *scene;
     std::shared_ptr<QPixmap> pixmap;
@@ -125,22 +133,30 @@ private:
     std::shared_ptr<QMovie> movie;
     QGraphicsPixmapItem pixmapItem, pixmapItemScaled;
     QTimer *animationTimer, *scaleTimer;
+    QScrollBar *hs, *vs;
     QPoint mouseMoveStartPos, mousePressPos, drawPos;
-    bool transparencyGridEnabled, expandImage, smoothAnimatedImages, smoothUpscaling, forceFastScale, keepFitMode, loopPlayback, mIsFullscreen, absoluteStep;
+    bool transparencyGrid, expandImage,    smoothAnimatedImages,
+         smoothUpscaling,  forceFastScale, keepFitMode,
+         loopPlayback,     mIsFullscreen,  scrollBarWorkaround,
+         useFixedZoomLevels, trackpadDetection;
+    QList<float> zoomLevels;
     MouseInteractionState mouseInteraction;
-    const int CHECKBOARD_GRID_SIZE = 10;
     const int SCROLL_UPDATE_RATE = 7;
-    const int SCROLL_DISTANCE = 220;
-    const qreal SCROLL_SPEED_MILTIPLIER = 1.3;
+    const int DEFAULT_SCROLL_DISTANCE = 240;
     const qreal TRACKPAD_SCROLL_MULTIPLIER = 0.7;
+    const qreal WHEEL_SCROLL_MULTIPLIER = 2.0f;
     const int ANIMATION_SPEED = 150;
     const float FAST_SCALE_THRESHOLD = 1.0f;
     const int LARGE_VIEWPORT_SIZE = 2073600;
     // how many px you can move while holding RMB until it counts as a zoom attempt
     int zoomThreshold = 4;
     int dragThreshold = 10;
-    qreal zoomStep = 0.1, dpr;
-    float minScale, maxScale, fitWindowScale, expandLimit, lockedScale;
+
+    bool dragsEnabled = true;
+    bool wayland = false;
+
+    float zoomStep = 0.1, dpr;
+    float minScale, maxScale, fitWindowScale, fitWindowStretchScale, expandLimit, lockedScale;
     QPointF savedViewportPos;
     ViewLockMode mViewLock;
 
@@ -152,17 +168,19 @@ private:
     ImageFocusPoint focusIn1to1;
     ScalingFilter mScalingFilter;
 
+    QPixmap *checkboard;
+
     void zoomAnchored(float newScale);
     void fitNormal();
     void fitWidth();
     void fitWindow();
-    void centerOnPixmap();
+    void fitWindowStretch();
+
     void scroll(int dx, int dy, bool animated);
 
     void mousePanWrapping(QMouseEvent *event);
     void mousePan(QMouseEvent *event);
     void mouseMoveZoom(QMouseEvent *event);
-    void drawTransparencyGrid();
     void reset();
     void applyFitMode();
 
@@ -174,16 +192,18 @@ private:
     void swapToOriginalPixmap();
     void setZoomAnchor(QPoint viewportPos);
     void updatePixmap(std::unique_ptr<QPixmap> newPixmap);
-    bool scaledImageFits() const;
     Qt::TransformationMode selectTransformationMode();
     void centerIfNecessary();
     void snapToEdges();
     void scrollSmooth(int dx, int dy);
     void scrollPrecise(int dx, int dy);
     void updateFitWindowScale();
+    void updateFitWindowStretchScale();
     void updateMinScale();
     void fitFree(float scale);
     void applySavedViewportPos();
     void saveViewportPos();
     void lockZoom();
+    void doZoomIn(bool atCursor);
+    void doZoomOut(bool atCursor);
 };

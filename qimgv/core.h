@@ -7,6 +7,7 @@
 #include <QDrag>
 #include <QFileSystemModel>
 #include <QDesktopServices>
+#include <QTranslator>
 #include "appversion.h"
 #include "settings.h"
 #include "components/directorymodel.h"
@@ -22,7 +23,10 @@
 
 struct State {
     bool hasActiveImage = false;
+    bool delayModel = false;
     QString currentFilePath = "";
+    QString directoryPath = "";
+    std::shared_ptr<Image> currentImg;
 };
 
 enum MimeDataTarget {
@@ -41,10 +45,13 @@ public slots:
     bool loadPath(QString);
 
 private:
+    QElapsedTimer t;
+
     void initGui();
     void initComponents();
     void connectComponents();
     void initActions();
+    void loadTranslation();
     void onUpdate();
     void onFirstRun();
 
@@ -66,6 +73,7 @@ private:
 
     QDrag *mDrag;
     QMimeData *getMimeDataForImage(std::shared_ptr<Image> img, MimeDataTarget target);
+    QTranslator *translator = nullptr;
 
     Randomizer randomizer;
     void syncRandomizer();
@@ -131,6 +139,7 @@ private slots:
     void saveCurrentFile();
     void saveCurrentFileAs(QString);
     void runScript(const QString&);
+    void setWallpaper();
     void removePermanent();
     void moveToTrash();
     void reloadImage();
@@ -165,4 +174,5 @@ private slots:
     void prevDirectory(bool selectLast);
     void prevDirectory();
     void print();
+    void modelDelayLoad();
 };

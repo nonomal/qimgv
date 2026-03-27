@@ -8,6 +8,7 @@
 #include <QFileDialog>
 #include <QMimeData>
 #include <QImageWriter>
+#include <QWindow>
 
 #if QT_VERSION < QT_VERSION_CHECK(5, 14, 0)
 #include <QDesktopWidget>
@@ -109,7 +110,7 @@ private:
     std::shared_ptr<InfoBarProxy> infoBarWindowed;
     FloatingMessageProxy *floatingMessage;
 
-    PanelHPosition panelPosition;
+    PanelPosition panelPosition;
     CurrentInfo info;
 #if QT_VERSION < QT_VERSION_CHECK(5, 14, 0)
     QDesktopWidget desktopWidget;
@@ -128,15 +129,17 @@ private:
     void setupCopyOverlay();
     void setupSaveOverlay();
     void setupRenameOverlay();
-
     void preShowResize(QSize sz);
+    void setInteractionEnabled(bool mode);
+
 private slots:
     void updateCurrentDisplay();
     void readSettings();
     void adaptToWindowState();
-
     void onWindowGeometryChanged();
     void onInfoUpdated();
+    void showScriptSettings();
+
 protected:
     void mouseMoveEvent(QMouseEvent *event);
     bool event(QEvent *event);
@@ -236,6 +239,7 @@ public slots:
     void fitWindow();
     void fitWidth();
     void fitOriginal();
+    void fitWindowStretch();
     void switchFitMode();
     void closeImage();
     void showContextMenu();
@@ -244,6 +248,7 @@ public slots:
     void toggleRenameOverlay(QString currentName);
     void setFilterNearest();
     void setFilterBilinear();
+    void setFilter(ScalingFilter filter);
     void toggleScalingFilter();
     void setDirectoryPath(QString path);
     void toggleLockZoom();

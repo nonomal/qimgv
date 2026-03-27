@@ -1,6 +1,7 @@
 #pragma once
 
 #include "gui/folderview/folderview.h"
+#include <QMutexLocker>
 
 struct FolderViewStateBuffer {
     QString directory;
@@ -24,6 +25,7 @@ public slots:
     virtual void select(int) override;
     virtual QList<int> selection() override;
     virtual void focusOn(int) override;
+    virtual void focusOnSelection() override;
     virtual void setDirectoryPath(QString path) override;
     virtual void insertItem(int index) override;
     virtual void removeItem(int index) override;
@@ -53,4 +55,5 @@ private:
     std::shared_ptr<FolderView> folderView;
     QVBoxLayout layout;
     FolderViewStateBuffer stateBuf;
+    QMutex m;
 };

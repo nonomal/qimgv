@@ -1,6 +1,7 @@
 ﻿#pragma once
 
 #include "gui/panels/mainpanel/thumbnailstrip.h"
+#include <QMutexLocker>
 
 struct ThumbnailStripStateBuffer {
     QList<int> selection;
@@ -24,6 +25,7 @@ public slots:
     virtual void select(int) override;
     virtual QList<int> selection() override;
     virtual void focusOn(int) override;
+    virtual void focusOnSelection() override;
     virtual void insertItem(int index) override;
     virtual void removeItem(int index) override;
     virtual void reloadItem(int index) override;
@@ -46,4 +48,5 @@ private:
     std::shared_ptr<ThumbnailStrip> thumbnailStrip = nullptr;
     QVBoxLayout layout;
     ThumbnailStripStateBuffer stateBuf;
+    QMutex m;
 };

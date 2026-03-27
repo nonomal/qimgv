@@ -19,9 +19,7 @@ target_sources(qimgv PRIVATE
     customwidgets/overlaywidget.cpp
     customwidgets/pathselectormenuitem.cpp
     customwidgets/sidepanelwidget.cpp
-    customwidgets/slidehpanel.cpp
     customwidgets/slidepanel.cpp
-    customwidgets/slidevpanel.cpp
     customwidgets/spinboxinputfix.cpp
     customwidgets/thumbnailview.cpp
     customwidgets/thumbnailwidget.cpp
@@ -30,6 +28,7 @@ target_sources(qimgv PRIVATE
     customwidgets/styledcombobox.cpp
     customwidgets/colorselectorbutton.cpp
     customwidgets/entryinfoitem.cpp
+    customwidgets/ssidebar.cpp
 
     dialogs/filereplacedialog.cpp
     dialogs/resizedialog.cpp
@@ -39,6 +38,7 @@ target_sources(qimgv PRIVATE
     dialogs/printdialog.cpp
 
     overlays/changelogwindow.cpp
+    overlays/clickzoneoverlay.cpp
     overlays/controlsoverlay.cpp
     overlays/copyoverlay.cpp
     overlays/cropoverlay.cpp

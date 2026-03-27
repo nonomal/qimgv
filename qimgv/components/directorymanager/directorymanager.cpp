@@ -121,6 +121,7 @@ bool DirectoryManager::setDirectory(QString dirPath) {
     }
     mListSource = SOURCE_DIRECTORY;
     mDirectoryPath = dirPath;
+
     loadEntryList(dirPath, false);
     sortEntryLists();
     emit loaded(dirPath);
@@ -324,7 +325,11 @@ void DirectoryManager::addEntriesFromDirectory(std::vector<FSEntry> &entryVec, Q
         QString name = QString::fromStdString(entry.path().filename().generic_string());
 #ifndef Q_OS_WIN32
         // ignore hidden files
-        if(name.startsWith("."))
+        if(!settings->showHiddenFiles() && name.startsWith("."))
+            continue;
+#else
+        DWORD attributes = GetFileAttributes(entry.path().generic_string().c_str());
+        if(!settings->showHiddenFiles() && attributes & FILE_ATTRIBUTE_HIDDEN)
             continue;
 #endif
         QString path = QString::fromStdString(entry.path().generic_string());
@@ -383,7 +388,10 @@ void DirectoryManager::addEntriesFromDirectoryRecursive(std::vector<FSEntry> &en
 }
 
 void DirectoryManager::sortEntryLists() {
-    std::sort(dirEntryVec.begin(), dirEntryVec.end(), std::bind(compareFunction(), this, std::placeholders::_1, std::placeholders::_2));
+    if(settings->sortFolders())
+        std::sort(dirEntryVec.begin(), dirEntryVec.end(), std::bind(compareFunction(), this, std::placeholders::_1, std::placeholders::_2));
+    else
+        std::sort(dirEntryVec.begin(), dirEntryVec.end(), std::bind(&DirectoryManager::path_entry_compare, this, std::placeholders::_1, std::placeholders::_2));
     std::sort(fileEntryVec.begin(), fileEntryVec.end(), std::bind(compareFunction(), this, std::placeholders::_1, std::placeholders::_2));
 }
 
@@ -417,8 +425,10 @@ bool DirectoryManager::forceInsertFileEntry(const QString &filePath) {
     QString fileName = QString::fromStdString(stdEntry.path().filename().generic_string()); // isn't it beautiful
     FSEntry FSEntry(filePath, fileName, stdEntry.file_size(), stdEntry.last_write_time(), stdEntry.is_directory());
     insert_sorted(fileEntryVec, FSEntry, std::bind(compareFunction(), this, std::placeholders::_1, std::placeholders::_2));
-    qDebug() << "fileIns" << filePath;
-    emit fileAdded(filePath);
+    if(!directoryPath().isEmpty()) {
+        qDebug() << "fileIns" << filePath << directoryPath();
+        emit fileAdded(filePath);
+    }
     return true;
 }
 

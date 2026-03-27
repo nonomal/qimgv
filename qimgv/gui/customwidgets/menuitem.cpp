@@ -3,8 +3,8 @@
 MenuItem::MenuItem(QWidget *parent)
     : QWidget(parent)
 {
-    mLayout.setContentsMargins(6,0,9,0);
-    mLayout.setSpacing(3);
+    mLayout.setContentsMargins(6,0,8,0);
+    mLayout.setSpacing(2);
 
     setAccessibleName("MenuItem");
     this->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
@@ -14,7 +14,7 @@ MenuItem::MenuItem(QWidget *parent)
 
     mIconWidget.installEventFilter(this);
 
-    spacer = new QSpacerItem(8, 1, QSizePolicy::MinimumExpanding, QSizePolicy::Fixed);
+    spacer = new QSpacerItem(3, 1, QSizePolicy::MinimumExpanding, QSizePolicy::Fixed);
     mIconWidget.setAttribute(Qt::WA_TransparentForMouseEvents, true);
     mIconWidget.setAccessibleName("MenuItemIcon");
     mTextLabel.setAccessibleName("MenuItemText");
@@ -23,6 +23,7 @@ MenuItem::MenuItem(QWidget *parent)
     mLayout.addWidget(&mTextLabel);
     mLayout.addSpacerItem(spacer);
     mLayout.addWidget(&mShortcutLabel);
+    mLayout.setStretch(1,1);
 
     setLayout(&mLayout);
 }
@@ -52,6 +53,10 @@ void MenuItem::setIconPath(QString path) {
     mIconWidget.setIconPath(path);
 }
 
+void MenuItem::setPassthroughClicks(bool mode) {
+    passthroughClicks = mode;
+}
+
 void MenuItem::paintEvent(QPaintEvent *event) {
     Q_UNUSED(event)
     QStyleOption opt;
@@ -69,9 +74,13 @@ void MenuItem::onClick() {
 void MenuItem::mousePressEvent(QMouseEvent *event) {
     onPress();
     QWidget::mousePressEvent(event);
+    if(!passthroughClicks)
+        event->accept();
 }
 
 void MenuItem::mouseReleaseEvent(QMouseEvent *event) {
     onClick();
     QWidget::mouseReleaseEvent(event);
+    if(!passthroughClicks)
+        event->accept();
 }

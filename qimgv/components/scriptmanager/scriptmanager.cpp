@@ -20,10 +20,11 @@ ScriptManager *ScriptManager::getInstance() {
     return scriptManager;
 }
 
-#ifdef __linux
 void ScriptManager::runScript(const QString &scriptName, std::shared_ptr<Image> img) {
     if(scripts.contains(scriptName)) {
         Script script = scripts.value(scriptName);
+        if(script.command.isEmpty())
+            return;
         QProcess exec(this);
 
         auto arguments = splitCommandLine(script.command);
@@ -33,7 +34,7 @@ void ScriptManager::runScript(const QString &scriptName, std::shared_ptr<Image> 
         if(script.blocking) {
             exec.start(program, arguments);
             if(!exec.waitForStarted()) {
-                qDebug() << "Unable not start script." << program << " Make sure it is an executable.";
+                qDebug() << "Unable not run application/script." << program << " Make sure it is an executable.";
             }
             exec.waitForFinished(10000);
         } else {
@@ -43,13 +44,13 @@ void ScriptManager::runScript(const QString &scriptName, std::shared_ptr<Image> 
                 if(fi.isFile() && !fi.isExecutable())
                      errorString = "Error:  " + program + "  is not an executable.";
                 else
-                    errorString = "Error: unable run script. See README for working examples.";
+                    errorString = "Error: unable run application/script. See README for working examples.";
                 emit error(errorString);
                 qWarning() << errorString;
             }
         }
     } else {
-        qDebug() << "[ScriptManager] Script " << scriptName << " does not exist.";
+        qDebug() << "[ScriptManager] File " << scriptName << " does not exist.";
     }
 }
 
@@ -66,17 +67,16 @@ void ScriptManager::runCommandDetached(QString cmd) {
     QProcess::startDetached(cmdSplit.takeAt(0), cmdSplit);
 }
 
-#else
-void ScriptManager::runScript(const QString &scriptName, std::shared_ptr<Image> img) {}
-QString ScriptManager::runCommand(QString cmd) {return nullptr;}
-void ScriptManager::runCommandDetached(QString cmd) {}
-#endif
-
 // TODO: what if filename contains one of the tags?
 void ScriptManager::processArguments(QStringList &cmd, std::shared_ptr<Image> img) {
     for (auto& i : cmd) {
         if(i.contains("%file%"))
             i.replace("%file%", img.get()->filePath());
+#ifdef __WIN32
+        // force "\" as a directory separator
+        i.replace("/", "\\");
+        i.replace("\\\\", "\\");
+#endif
     }
 }
 
@@ -87,25 +87,41 @@ QStringList ScriptManager::splitCommandLine(const QString &cmdLine) {
     bool escape = false;
     enum { Idle, Arg, QuotedArg } state = Idle;
     foreach (QChar const c, cmdLine) {
-        if (!escape && c == '\\') { escape = true; continue; }
+        //if(!escape && c == '\\') {
+        //    escape = true;
+        //    continue;
+        //}
         switch (state) {
         case Idle:
-            if (!escape && c == '"') state = QuotedArg;
-            else if (escape || !c.isSpace()) { arg += c; state = Arg; }
+            if(!escape && c == '"')
+                state = QuotedArg;
+            else if (escape || !c.isSpace()) {
+                arg += c;
+                state = Arg;
+            }
             break;
         case Arg:
-            if (!escape && c == '"') state = QuotedArg;
-            else if (escape || !c.isSpace()) arg += c;
-            else { list << arg; arg.clear(); state = Idle; }
+            if(!escape && c == '"')
+                state = QuotedArg;
+            else if(escape || !c.isSpace())
+                arg += c;
+            else {
+                list << arg;
+                arg.clear();
+                state = Idle;
+            }
             break;
         case QuotedArg:
-            if (!escape && c == '"') state = arg.isEmpty() ? Idle : Arg;
-            else arg += c;
+            if(!escape && c == '"')
+                state = arg.isEmpty() ? Idle : Arg;
+            else
+                arg += c;
             break;
         }
         escape = false;
     }
-    if (!arg.isEmpty()) list << arg;
+    if(!arg.isEmpty())
+        list << arg;
     return list;
 }
 

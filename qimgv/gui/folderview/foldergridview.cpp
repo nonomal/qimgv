@@ -3,7 +3,7 @@
 // TODO: create a base class for this and the one on panel
 
 FolderGridView::FolderGridView(QWidget *parent)
-    : ThumbnailView(THUMBNAILVIEW_VERTICAL, parent),
+    : ThumbnailView(Qt::Vertical, parent),
       shiftedCol(-1)
 {
     offscreenPreloadArea = 2300;
@@ -99,10 +99,10 @@ void FolderGridView::setShowLabels(bool mode) {
         thumbnails.at(i)->setThumbStyle(style);
     updateLayout();
     fitSceneToContents();
-    ensureSelectedItemVisible();
+    focusOnSelection();
 }
 
-void FolderGridView::ensureSelectedItemVisible() {
+void FolderGridView::focusOnSelection() {
     if(!thumbnails.count() || lastSelected() == -1)
         return;
     ThumbnailWidget *thumb = thumbnails.at(lastSelected());
@@ -257,31 +257,6 @@ void FolderGridView::selectLast() {
 
 void FolderGridView::scrollToCurrent() {
     scrollToItem(lastSelected());
-}
-
-void FolderGridView::scrollToItem(int index) {
-    if(!checkRange(index))
-        return;
-
-    ThumbnailWidget *item = thumbnails.at(index);
-
-    QRectF sceneRect = mapToScene(viewport()->rect()).boundingRect();
-    QRectF itemRect = item->mapRectToScene(item->rect());
-
-    bool visible = sceneRect.contains(itemRect);
-    if(!visible) {
-        int delta = 0;
-        // UP
-        if(itemRect.top() >= sceneRect.top())
-            delta = sceneRect.bottom() - itemRect.bottom();
-        // DOWN
-        else
-            delta = sceneRect.top() - itemRect.top();
-        if(settings->enableSmoothScroll())
-            scrollSmooth(delta);
-        else
-            scrollPrecise(delta);
-    }
 }
 
 // same as scrollToItem minus the animation

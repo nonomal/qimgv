@@ -74,11 +74,12 @@ void MW::setupUi() {
     infoBarFullscreen = new FullscreenInfoOverlayProxy(viewerWidget.get());
     sidePanel = new SidePanel(this);
     layout.addWidget(sidePanel);
-    imageInfoOverlay = new ImageInfoOverlayProxy(this);
-    floatingMessage = new FloatingMessageProxy(this);
+    imageInfoOverlay = new ImageInfoOverlayProxy(viewerWidget.get());
+    floatingMessage = new FloatingMessageProxy(viewerWidget.get()); // todo: use additional one for folderview?
     connect(viewerWidget.get(), &ViewerWidget::scalingRequested, this, &MW::scalingRequested);
     connect(viewerWidget.get(), &ViewerWidget::draggedOut, this, qOverload<>(&MW::draggedOut));
     connect(viewerWidget.get(), &ViewerWidget::playbackFinished, this, &MW::playbackFinished);
+    connect(viewerWidget.get(), &ViewerWidget::showScriptSettings, this, &MW::showScriptSettings);
     connect(this, &MW::zoomIn,        viewerWidget.get(), &ViewerWidget::zoomIn);
     connect(this, &MW::zoomOut,       viewerWidget.get(), &ViewerWidget::zoomOut);
     connect(this, &MW::zoomInCursor,  viewerWidget.get(), &ViewerWidget::zoomInCursor);
@@ -102,7 +103,8 @@ void MW::setupUi() {
 
 void MW::setupFullUi() {
     setupCropPanel();
-    viewerWidget->setupMainPanel();
+    docWidget->allowPanelInit();
+    docWidget->setupMainPanel();
     infoBarWindowed->init();
     infoBarFullscreen->init();
 }
@@ -144,7 +146,7 @@ void MW::toggleFolderView() {
         copyOverlay->hide();
     if(renameOverlay)
         renameOverlay->hide();
-    viewerWidget->hidePanel();
+    docWidget->hideFloatingPanel();
     imageInfoOverlay->hide();
     centralWidget->toggleViewMode();
     onInfoUpdated();
@@ -156,7 +158,7 @@ void MW::enableFolderView() {
         copyOverlay->hide();
     if(renameOverlay)
         renameOverlay->hide();
-    viewerWidget->hidePanel();
+    docWidget->hideFloatingPanel();
     imageInfoOverlay->hide();
     centralWidget->showFolderView();
     onInfoUpdated();
@@ -190,6 +192,14 @@ void MW::fitWidth() {
 void MW::fitOriginal() {
     if(viewerWidget->interactionEnabled()) {
         viewerWidget->fitOriginal();
+    } else {
+        showMessage("Zoom temporary disabled");
+    }
+}
+
+void MW::fitWindowStretch() {
+    if(viewerWidget->interactionEnabled()) {
+        viewerWidget->fitWindowStretch();
     } else {
         showMessage("Zoom temporary disabled");
     }
@@ -235,6 +245,7 @@ void MW::preShowResize(QSize sz) {
         setGeometry(newGeom);
     else // setGeometry wont work on hidden windows, so we just save for it to be restored later
         settings->setWindowGeometry(newGeom);
+    qApp->processEvents(); // not needed anymore with patched qt?
 }
 
 void MW::showImage(std::unique_ptr<QPixmap> pixmap) {
@@ -276,7 +287,7 @@ void MW::onSortingChanged(SortingMode mode) {
 }
 
 void MW::setDirectoryPath(QString path) {
-    closeImage();
+    //closeImage();
     info.directoryPath = path;
     info.directoryName = path.split("/").last();
     folderView->setDirectoryPath(path);
@@ -333,10 +344,13 @@ void MW::toggleRenameOverlay(QString currentName) {
 }
 
 void MW::toggleScalingFilter() {
-    if(viewerWidget->scalingFilter() == QI_FILTER_BILINEAR)
+    ScalingFilter configuredFilter = settings->scalingFilter();
+    if(viewerWidget->scalingFilter() == configuredFilter) {
         setFilterNearest();
-    else
-        setFilterBilinear();
+    }
+    else {
+        setFilter(configuredFilter);
+    }
 }
 
 void MW::setFilterNearest() {
@@ -347,6 +361,32 @@ void MW::setFilterNearest() {
 void MW::setFilterBilinear() {
     showMessage("Filter: bilinear", 600);
     viewerWidget->setFilterBilinear();
+}
+
+void MW::setFilter(ScalingFilter filter) {
+    QString filterName;
+    switch (filter) {
+        case QI_FILTER_NEAREST:
+            filterName = "nearest";
+            break;
+        case ScalingFilter::QI_FILTER_BILINEAR:
+            filterName = "bilinear";
+            break;
+        case QI_FILTER_CV_BILINEAR_SHARPEN:
+            filterName = "bilinear + sharpen";
+            break;
+        case QI_FILTER_CV_CUBIC:
+            filterName = "bicubic";
+            break;
+        case QI_FILTER_CV_CUBIC_SHARPEN:
+            filterName = "bicubic + sharpen";
+            break;
+        default:
+            filterName = "configured " + QString::number(static_cast<int>(filter));
+            break;
+    }
+    showMessage("Filter " + filterName, 600);
+    viewerWidget->setScalingFilter(filter);
 }
 
 bool MW::isCropPanelActive() {
@@ -434,7 +474,13 @@ void MW::mouseReleaseEvent(QMouseEvent *event) {
 
 void MW::mouseDoubleClickEvent(QMouseEvent *event) {
     event->accept();
-    QMouseEvent *fakePressEvent = new QMouseEvent(QEvent::MouseButtonPress, event->pos(), event->button(), event->buttons(), event->modifiers());
+    QMouseEvent *fakePressEvent = new QMouseEvent(
+        QEvent::MouseButtonPress,
+        event->pos(),
+        event->button(),
+        event->buttons(),
+        event->modifiers()
+    );
     actionManager->processEvent(fakePressEvent);
     actionManager->processEvent(event);
 }
@@ -492,7 +538,7 @@ void MW::showSaveDialog(QString filePath) {
 }
 
 QString MW::getSaveFileName(QString filePath) {
-    viewerWidget->hidePanel();
+    docWidget->hideFloatingPanel();
     QStringList filters;
     // generate filter for writable images
     // todo: some may need to be blacklisted
@@ -535,7 +581,7 @@ QString MW::getSaveFileName(QString filePath) {
 }
 
 void MW::showOpenDialog(QString path) {
-    viewerWidget->hidePanel();
+    docWidget->hideFloatingPanel();
 
     QFileDialog dialog(this);
     QStringList imageFilter;
@@ -569,9 +615,15 @@ DialogResult MW::fileReplaceDialog(QString src, QString dst, FileReplaceMode mod
 }
 
 void MW::showSettings() {
-    viewerWidget->hidePanel();
-
+    docWidget->hideFloatingPanel();
     SettingsDialog settingsDialog(this);
+    settingsDialog.exec();
+}
+
+void MW::showScriptSettings() {
+    docWidget->hideFloatingPanel();
+    SettingsDialog settingsDialog(this);
+    settingsDialog.switchToPage(4);
     settingsDialog.exec();
 }
 
@@ -660,24 +712,29 @@ void MW::showCropPanel() {
         return;
 
     if(activeSidePanel != SIDEPANEL_CROP) {
-        viewerWidget->hidePanel();
+        docWidget->hideFloatingPanel();
         sidePanel->setWidget(cropPanel);
         sidePanel->show();
         cropOverlay->show();
         activeSidePanel = SIDEPANEL_CROP;
         // reset & lock zoom so CropOverlay won't go crazy
         viewerWidget->fitWindow();
-        viewerWidget->disableInteraction();
+        setInteractionEnabled(false);
         // feed the panel current image info
         updateCropPanelData();
     }
+}
+
+void MW::setInteractionEnabled(bool mode) {
+    docWidget->setInteractionEnabled(mode);
+    viewerWidget->setInteractionEnabled(mode);
 }
 
 void MW::hideCropPanel() {
     sidePanel->hide();
     if(activeSidePanel == SIDEPANEL_CROP) {
         cropOverlay->hide();
-        viewerWidget->enableInteraction();
+        setInteractionEnabled(true);
     }
     activeSidePanel = SIDEPANEL_NONE;
 }
@@ -754,13 +811,13 @@ void MW::onInfoUpdated() {
 
     QString windowTitle;
     if(centralWidget->currentViewMode() == MODE_FOLDERVIEW) {
-        windowTitle = "Folder view";
-        infoBarFullscreen->setInfo("", "No file opened.", "");
-        infoBarWindowed->setInfo("", "No file opened.", "");
+        windowTitle = tr("Folder view");
+        infoBarFullscreen->setInfo("", tr("No file opened."), "");
+        infoBarWindowed->setInfo("", tr("No file opened."), "");
     } else if(info.fileName.isEmpty()) {
         windowTitle = qApp->applicationName();
-        infoBarFullscreen->setInfo("", "No file opened.", "");
-        infoBarWindowed->setInfo("", "No file opened.", "");
+        infoBarFullscreen->setInfo("", tr("No file opened."), "");
+        infoBarWindowed->setInfo("", tr("No file opened."), "");
     } else {
         windowTitle = info.fileName;
         if(settings->windowTitleExtendedInfo()) {
@@ -804,7 +861,7 @@ std::shared_ptr<FolderViewProxy> MW::getFolderView() {
 }
 
 std::shared_ptr<ThumbnailStripProxy> MW::getThumbnailPanel() {
-    return viewerWidget->getThumbPanel();
+    return docWidget->thumbPanel();
 }
 
 // todo: this is crap
@@ -813,23 +870,25 @@ void MW::showMessageDirectory(QString dirName) {
 }
 
 void MW::showMessageDirectoryEnd() {
-    floatingMessage->showMessage("", FloatingWidgetPosition::RIGHT, FloatingMessageIcon::ICON_RIGHT_EDGE, 400);
+    // TODO replace with something nicer (integrate with click overlay?)
+    //floatingMessage->showMessage("", FloatingWidgetPosition::RIGHT, FloatingMessageIcon::ICON_RIGHT_EDGE, 400);
 }
 
 void MW::showMessageDirectoryStart() {
-    floatingMessage->showMessage("", FloatingWidgetPosition::LEFT, FloatingMessageIcon::ICON_LEFT_EDGE, 400);
+    // TODO replace with something nicer (integrate with click overlay?)
+    //floatingMessage->showMessage("", FloatingWidgetPosition::LEFT, FloatingMessageIcon::ICON_LEFT_EDGE, 400);
 }
 
 void MW::showMessageFitWindow() {
-    floatingMessage->showMessage("Fit Window", FloatingMessageIcon::NO_ICON, 350);
+    floatingMessage->showMessage(tr("Fit Window"), FloatingMessageIcon::NO_ICON, 350);
 }
 
 void MW::showMessageFitWidth() {
-    floatingMessage->showMessage("Fit Width", FloatingMessageIcon::NO_ICON, 350);
+    floatingMessage->showMessage(tr("Fit Width"), FloatingMessageIcon::NO_ICON, 350);
 }
 
 void MW::showMessageFitOriginal() {
-    floatingMessage->showMessage("Fit 1:1", FloatingMessageIcon::NO_ICON, 350);
+    floatingMessage->showMessage(tr("Fit 1:1"), FloatingMessageIcon::NO_ICON, 350);
 }
 
 void MW::showMessage(QString text) {
@@ -876,43 +935,54 @@ void MW::readSettings() {
 // todo: remove/rename?
 void MW::applyWindowedBackground() {
 #ifdef USE_KDE_BLUR
-    if(settings->backgroundOpacity() == 1.0)
-        KWindowEffects::enableBlurBehind(winId(), false);
-    else
-        KWindowEffects::enableBlurBehind(winId(), settings->blurBackground());
+    QWindow* window = this->windowHandle();
+    if(window) {
+        if(settings->backgroundOpacity() == 1.0)
+            KWindowEffects::enableBlurBehind(window, false);
+        else
+            KWindowEffects::enableBlurBehind(window, settings->blurBackground());
+    }
 #endif
 }
 
 void MW::applyFullscreenBackground() {
 #ifdef USE_KDE_BLUR
-    KWindowEffects::enableBlurBehind(winId(), false);
+    QWindow* window = this->windowHandle();
+    if(window)
+        KWindowEffects::enableBlurBehind(window, false);
 #endif
 }
 
 // changes ui elements according to fullscreen state
 void MW::adaptToWindowState() {
-    viewerWidget->hidePanel();
+    docWidget->hideFloatingPanel();
     if(isFullScreen()) { //-------------------------------------- fullscreen ---
         applyFullscreenBackground();
         infoBarWindowed->hide();
+
         if(showInfoBarFullscreen)
             infoBarFullscreen->showWhenReady();
         else
             infoBarFullscreen->hide();    
-        if(viewerWidget->panelPosition() == PANEL_BOTTOM || !viewerWidget->panelEnabled())
+
+        auto pos = settings->panelPosition();
+        if(!settings->panelEnabled() || pos == PANEL_BOTTOM || pos == PANEL_LEFT)
             controlsOverlay->show();
         else
             controlsOverlay->hide();
     } else { //------------------------------------------------------ window ---
         applyWindowedBackground();
         infoBarFullscreen->hide();
+
         if(showInfoBarWindowed)
             infoBarWindowed->show();
         else
             infoBarWindowed->hide();
+
         controlsOverlay->hide();
     }
     folderView->onFullscreenModeChanged(isFullScreen());
+    docWidget->onFullscreenModeChanged(isFullScreen());
     viewerWidget->onFullscreenModeChanged(isFullScreen());
 }
 
@@ -924,7 +994,7 @@ void MW::paintEvent(QPaintEvent *event) {
 
 void MW::leaveEvent(QEvent *event) {
     QWidget::leaveEvent(event);
-    viewerWidget->hidePanelAnimated();
+    docWidget->hideFloatingPanel(true);
 }
 
 // block native tab-switching so we can use it in shortcuts

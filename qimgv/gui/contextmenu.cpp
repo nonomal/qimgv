@@ -29,32 +29,35 @@ ContextMenu::ContextMenu(QWidget *parent) :
     ui->fitWindow->setAction("fitWindow");
     ui->fitWindow->setIconPath(":/res/icons/common/buttons/contextmenu/fit-window18.png");
     ui->fitWindow->setTriggerMode(TriggerMode::PressTrigger);
+    ui->fitWindowStretch->setAction("fitWindowStretch");
+    ui->fitWindowStretch->setIconPath(":/res/icons/common/buttons/contextmenu/fit-height-stretch18.png");
+    ui->fitWindowStretch->setTriggerMode(TriggerMode::PressTrigger);
+    // -------------------------------------------------------------------------
+    // transform buttons
+    ui->rotateLeft->setAction("rotateLeft");
+    ui->rotateLeft->setIconPath(":/res/icons/common/menuitem/rotate-left16.png");
+    ui->rotateLeft->setTriggerMode(TriggerMode::PressTrigger);
+    ui->rotateRight->setAction("rotateRight");
+    ui->rotateRight->setIconPath(":/res/icons/common/menuitem/rotate-right16.png");
+    ui->rotateRight->setTriggerMode(TriggerMode::PressTrigger);
+    ui->flipH->setAction("flipH");
+    ui->flipH->setIconPath(":/res/icons/common/menuitem/flip-h16.png");
+    ui->flipH->setTriggerMode(TriggerMode::PressTrigger);
+    ui->flipV->setAction("flipV");
+    ui->flipV->setIconPath(":/res/icons/common/menuitem/flip-v16.png");
+    ui->flipV->setTriggerMode(TriggerMode::PressTrigger);
+    ui->crop->setAction("crop");
+    ui->crop->setIconPath(":/res/icons/common/menuitem/image-crop16.png");
+    ui->crop->setTriggerMode(TriggerMode::PressTrigger);
+    ui->resize->setAction("resize");
+    ui->resize->setIconPath(":/res/icons/common/menuitem/resize16.png");
+    ui->resize->setTriggerMode(TriggerMode::PressTrigger);
     // -------------------------------------------------------------------------
     //  entries
-    ui->rotateLeft->setAction("rotateLeft");
-    ui->rotateLeft->setText(tr("Rotate left"));
-    ui->rotateLeft->setIconPath(":/res/icons/common/menuitem/rotate-left16.png");
+    ui->print->setAction("print");
+    ui->print->setText(tr("Print"));
+    ui->print->setIconPath(":/res/icons/common/menuitem/print16.png");
 
-    ui->rotateRight->setAction("rotateRight");
-    ui->rotateRight->setText(tr("Rotate right"));
-    ui->rotateRight->setIconPath(":/res/icons/common/menuitem/rotate-right16.png");
-
-    ui->flipH->setAction("flipH");
-    ui->flipH->setText(tr("Flip H"));
-    ui->flipH->setIconPath(":/res/icons/common/menuitem/flip-h16.png");
-
-    ui->flipV->setAction("flipV");
-    ui->flipV->setText(tr("Flip V"));
-    ui->flipV->setIconPath(":/res/icons/common/menuitem/flip-v16.png");
-
-    ui->crop->setAction("crop");
-    ui->crop->setText(tr("Crop"));
-    ui->crop->setIconPath(":/res/icons/common/menuitem/image-crop16.png");
-
-    ui->resize->setAction("resize");
-    ui->resize->setText(tr("Resize"));
-    ui->resize->setIconPath(":/res/icons/common/menuitem/resize16.png");
-    // -------------------------------------------------------------------------
     ui->copy->setAction("copyFile");
     ui->copy->setText(tr("Quick copy"));
     ui->copy->setIconPath(":/res/icons/common/menuitem/copy16.png");
@@ -65,19 +68,27 @@ ContextMenu::ContextMenu(QWidget *parent) :
 
     ui->trash->setAction("moveToTrash");
     ui->trash->setText(tr("Move to trash"));
-    ui->trash->setIconPath(":/res/icons/common/menuitem/trash-red16.png");
+    ui->trash->setIconPath(":/res/icons/common/menuitem/trash16.png");
+    ui->trash->setShortcutText("");
     // -------------------------------------------------------------------------
     ui->open->setAction("open");
     ui->open->setText(tr("Open"));
     ui->open->setIconPath(":/res/icons/common/menuitem/open16.png");
+    ui->open->setShortcutText("");
 
     ui->folderView->setAction("folderView");
     ui->folderView->setText(tr("Folder View"));
     ui->folderView->setIconPath(":/res/icons/common/menuitem/folderview16.png");
+    ui->folderView->setShortcutText("");
 
     ui->settings->setAction("openSettings");
     ui->settings->setText(tr("Settings"));
     ui->settings->setIconPath(":/res/icons/common/menuitem/settings16.png");
+    // -------------------------------------------------------------------------
+    ui->openWith->setText(tr("Open with..."));
+    ui->openWith->setIconPath(":/res/icons/common/menuitem/run16.png");
+    ui->openWith->setPassthroughClicks(false);
+    connect(ui->openWith, &ContextMenuItem::pressed, this, &ContextMenu::switchToScriptsPage);
     // -------------------------------------------------------------------------
     ui->showLocation->setAction("showInDirectory");
     ui->showLocation->setText(tr("Show in folder"));
@@ -85,11 +96,43 @@ ContextMenu::ContextMenu(QWidget *parent) :
     // -------------------------------------------------------------------------
     // force resize to fit new menuitem width
     this->adjustSize();
+
+    // Scripts page
     // -------------------------------------------------------------------------
+    ui->backButton->setText(tr("Back"));
+    ui->backButton->setIconPath(":/res/icons/common/menuitem/back16.png");
+    ui->backButton->setPassthroughClicks(false);
+    ui->scriptSetupButton->setText(tr("Configure menu"));
+    ui->scriptSetupButton->setIconPath(":/res/icons/common/menuitem/settings16.png");
+    connect(ui->backButton, &ContextMenuItem::pressed, this, &ContextMenu::switchToMainPage);
+    connect(ui->scriptSetupButton, &ContextMenuItem::pressed, this, &ContextMenu::showScriptSettings);
+    fillOpenWithMenu();
 }
 
 ContextMenu::~ContextMenu() {
     delete ui;
+}
+
+void ContextMenu::fillOpenWithMenu() {
+    auto scripts = scriptManager->allScripts();
+    QMap<QString, Script>::iterator i;
+    for (i = scripts.begin(); i != scripts.end(); ++i) {
+        if(!i.value().command.isEmpty()) {
+            auto btn = new ContextMenuItem();
+            btn->setAction("s:"+i.key());
+            btn->setIconPath(":/res/icons/common/menuitem/open16.png");
+            btn->setText(i.key());
+            ui->scriptsLayout->addWidget(btn);
+        }
+    }
+}
+
+void ContextMenu::switchToMainPage() {
+    ui->stackedWidget->setCurrentIndex(0);
+}
+
+void ContextMenu::switchToScriptsPage() {
+    ui->stackedWidget->setCurrentIndex(1);
 }
 
 void ContextMenu::setImageEntriesEnabled(bool mode) {
@@ -99,13 +142,16 @@ void ContextMenu::setImageEntriesEnabled(bool mode) {
     ui->flipV->setEnabled(mode);
     ui->crop->setEnabled(mode);
     ui->resize->setEnabled(mode);
+
     ui->copy->setEnabled(mode);
     ui->move->setEnabled(mode);
     ui->trash->setEnabled(mode);
+    ui->openWith->setEnabled(mode);
     ui->showLocation->setEnabled(mode);
 }
 
 void ContextMenu::showAt(QPoint pos) {
+    switchToMainPage();
     QRect geom = geometry();
     geom.moveTopLeft(pos);
     setGeometry(geom);

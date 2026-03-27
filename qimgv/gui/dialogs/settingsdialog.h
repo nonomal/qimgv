@@ -8,6 +8,7 @@
 #include <QTextBrowser>
 #include <QListWidget>
 #include <QStackedWidget>
+#include <QButtonGroup>
 #include <QApplication>
 #include <QDebug>
 #include <QMenu>
@@ -28,6 +29,7 @@ class SettingsDialog : public QDialog
 public:
     explicit SettingsDialog(QWidget *parent = nullptr);
     ~SettingsDialog();
+    void switchToPage(int number);
 
 public slots:
     int exec();
@@ -47,6 +49,9 @@ private:
 
     void setupSidebar();
     void removeShortcutAt(int row);
+    void adjustSizeToContents();
+    QMap<QString, QString> langs; // <"en_US", "English">
+    QButtonGroup fitModeGrp, folderEndGrp, zoomIndGrp;
 
 private slots:
     void saveSettings();
@@ -71,7 +76,9 @@ private slots:
     void onJPEGQualitySliderChanged(int value);
     void resetToDesktopTheme();    
     void onAutoResizeLimitSliderChanged(int value);
+    void onMouseScrollingSpeedSliderChanged(int value);
 
+    void resetZoomLevels();
 signals:
     void settingsChanged();
 };

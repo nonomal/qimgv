@@ -27,6 +27,7 @@ void Actions::init() {
     mActions.insert("fitWindow", QVersionNumber(0,6,2));
     mActions.insert("fitWidth", QVersionNumber(0,6,2));
     mActions.insert("fitNormal", QVersionNumber(0,6,2));
+    mActions.insert("fitWindowStretch", QVersionNumber(1,0,3));
     mActions.insert("toggleFitMode", QVersionNumber(0,6,2));
     mActions.insert("resize", QVersionNumber(0,6,2));
     mActions.insert("rotateRight", QVersionNumber(0,6,2));
@@ -42,7 +43,7 @@ void Actions::init() {
     mActions.insert("open", QVersionNumber(0,6,2));
     mActions.insert("save", QVersionNumber(0,6,2));
     mActions.insert("saveAs", QVersionNumber(0,6,2));
-    mActions.insert("setWallpaper", QVersionNumber(0,6,2));
+    mActions.insert("setWallpaper", QVersionNumber(0,9,3));
     mActions.insert("crop", QVersionNumber(0,6,2));
     mActions.insert("removeFile", QVersionNumber(0,6,2));
     mActions.insert("copyFile", QVersionNumber(0,6,2));

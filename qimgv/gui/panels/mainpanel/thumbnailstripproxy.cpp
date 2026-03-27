@@ -9,8 +9,11 @@ ThumbnailStripProxy::ThumbnailStripProxy(QWidget *parent)
 void ThumbnailStripProxy::init() {
     if(thumbnailStrip)
         return;
+    qApp->processEvents(); // chew through events in case we have something that alters stateBuf in queue
+    QMutexLocker ml(&m);
     thumbnailStrip.reset(new ThumbnailStrip());
     thumbnailStrip->setParent(this);
+    ml.unlock();
     layout.addWidget(thumbnailStrip.get());
     this->setFocusProxy(thumbnailStrip.get());
     this->setLayout(&layout);
@@ -26,8 +29,7 @@ void ThumbnailStripProxy::init() {
     // wait till layout stuff happens
     // before calling focusOn()
     qApp->processEvents();
-    if(thumbnailStrip->selection().count())
-        thumbnailStrip->focusOn(stateBuf.selection.last());
+    thumbnailStrip->focusOnSelection();
 }
 
 bool ThumbnailStripProxy::isInitialized() {
@@ -35,10 +37,12 @@ bool ThumbnailStripProxy::isInitialized() {
 }
 
 void ThumbnailStripProxy::populate(int count) {
+    QMutexLocker ml(&m);
+    stateBuf.itemCount = count;
     if(thumbnailStrip) {
-        thumbnailStrip->populate(count);
+        ml.unlock();
+        thumbnailStrip->populate(stateBuf.itemCount);
     } else {
-        stateBuf.itemCount = count;
         stateBuf.selection.clear();
     }
 }
@@ -77,6 +81,12 @@ QList<int> ThumbnailStripProxy::selection() {
 void ThumbnailStripProxy::focusOn(int index) {
     if(thumbnailStrip) {
         thumbnailStrip->focusOn(index);
+    }
+}
+
+void ThumbnailStripProxy::focusOnSelection() {
+    if(thumbnailStrip) {
+        thumbnailStrip->focusOnSelection();
     }
 }
 
@@ -126,7 +136,6 @@ void ThumbnailStripProxy::addItem() {
 }
 
 QSize ThumbnailStripProxy::itemSize() {
-    init();
     return thumbnailStrip->itemSize();
 }
 

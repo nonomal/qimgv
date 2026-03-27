@@ -33,6 +33,7 @@ void ActionManager::initDefaults() {
     actionManager->defaults.insert("1", "fitWindow");
     actionManager->defaults.insert("2", "fitWidth");
     actionManager->defaults.insert("3", "fitNormal");
+    actionManager->defaults.insert("4", "fitWindowStretch");
     actionManager->defaults.insert("R", "resize");
     actionManager->defaults.insert("H", "flipH");
     actionManager->defaults.insert("V", "flipV");
@@ -40,8 +41,12 @@ void ActionManager::initDefaults() {
     actionManager->defaults.insert(InputMap::keyNameCtrl() + "+L", "rotateLeft");
     actionManager->defaults.insert(InputMap::keyNameCtrl() + "+WheelUp", "zoomInCursor");
     actionManager->defaults.insert(InputMap::keyNameCtrl() + "+WheelDown", "zoomOutCursor");
+    actionManager->defaults.insert("=", "zoomIn"); // [=+] key on the number row
+    actionManager->defaults.insert(InputMap::keyNameCtrl() + "+=", "zoomIn");
     actionManager->defaults.insert("+", "zoomIn");
+    actionManager->defaults.insert(InputMap::keyNameCtrl() + "++", "zoomIn");
     actionManager->defaults.insert("-", "zoomOut");
+    actionManager->defaults.insert(InputMap::keyNameCtrl() + "+-", "zoomOut");
     actionManager->defaults.insert(InputMap::keyNameCtrl() + "+Down", "zoomOut");
     actionManager->defaults.insert(InputMap::keyNameCtrl() + "+Up", "zoomIn");
     actionManager->defaults.insert("Up", "scrollUp");
@@ -49,7 +54,7 @@ void ActionManager::initDefaults() {
     actionManager->defaults.insert(InputMap::keyNameCtrl() + "+O", "open");
     actionManager->defaults.insert(InputMap::keyNameCtrl() + "+S", "save");
     actionManager->defaults.insert(InputMap::keyNameCtrl() + "+" + InputMap::keyNameShift() + "+S", "saveAs");
-    //actionManager->defaults.insert(InputMap::keyNameCtrl() + "+W", "setWallpaper");
+    actionManager->defaults.insert(InputMap::keyNameCtrl() + "+W", "setWallpaper");
     actionManager->defaults.insert("X", "crop");
     actionManager->defaults.insert(InputMap::keyNameCtrl() + "+P", "print");
     actionManager->defaults.insert(InputMap::keyNameAlt() + "+X", "exit");

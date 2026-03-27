@@ -1,7 +1,4 @@
-## DEVELOPMENT IS ON HOLD INDEFINITELY (russian invasion of my country)
-------------------------------
-------------------------------
-------------------------------
+## :exclamation: Updates may be slow due to war in Ukraine :sunflower: :sunflower: :sunflower:
 
 qimgv | Current version: 1.0.2
 =====
@@ -137,13 +134,25 @@ qimgv can open some extra formats via third-party image plugins. All of them are
 
 # Installation
 
-## Windows builds
-
-  [Grab the latest release here](https://github.com/easymodo/qimgv/releases)
+## Windows
   
-  Windows builds are portable (everything is contained within install folder). Installer additionally sets up file associations.
+  Windows builds are portable (everything is contained within the install folder). The installer also sets up file associations.
   
   _NOTE: `-video` variants include mpv for video support_
+  
+  Grab the latest version from the [releases page](https://github.com/easymodo/qimgv/releases)
+
+  Alternatively you can install it with Chocolatey:
+  
+  ```
+  choco install qimgv
+  ```
+  
+  Or WinGet:
+  
+  ```
+  winget install --id easymodo.qimgv
+  ```
 
 ## GNU+Linux
 
@@ -158,15 +167,7 @@ qimgv-git
 ### Ubuntu / Linux Mint / Pop!\_OS / etc.
 
 ```
-sudo add-apt-repository ppa:easymodo/qimgv
-sudo apt update
 sudo apt install qimgv
-```
-
-_Alternative package with kde support:_
-
-```
-sudo apt install qimgv-kde
 ```
 
 ### Fedora
@@ -199,6 +200,14 @@ xbps-install -S qimgv
 apk add qimgv
 ```
 
+## BSD
+
+### FreeBSD
+
+```
+pkg install qimgv
+```
+
 This list may be incomplete. 
 
 ## Compiling from source
@@ -207,8 +216,10 @@ See [Compiling qimgv from source](https://github.com/easymodo/qimgv/wiki/Compili
 
 # Donate
 
-If you wish to throw me a few bucks, you can do it here:
+If you wish to give me a few bucks, please consider donating to the Ukrainian Army instead:
 
-<a href="https://www.buymeacoffee.com/easymodo" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/default-orange.png" alt="Donate" height="41" width="174"></a>
+[https://savelife.in.ua/en/donate-en/#donate-army-card-once](https://savelife.in.ua/en/donate-en/#donate-army-card-once)
 
-Any support is appreciated!
+[https://u24.gov.ua/](https://u24.gov.ua/)
+
+This directly increases the chances of me being able to work on this in future

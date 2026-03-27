@@ -22,11 +22,6 @@
 #include "gui/idirectoryview.h"
 #include "shortcutbuilder.h"
 
-enum ThumbnailViewOrientation {
-    THUMBNAILVIEW_HORIZONTAL,
-    THUMBNAILVIEW_VERTICAL
-};
-
 enum ThumbnailSelectMode {
     ACTIVATE_BY_PRESS,
     ACTIVATE_BY_DOUBLECLICK
@@ -41,7 +36,7 @@ class ThumbnailView : public QGraphicsView, public IDirectoryView {
     Q_OBJECT
     Q_INTERFACES(IDirectoryView)
 public:
-    ThumbnailView(ThumbnailViewOrientation orient, QWidget *parent = nullptr);
+    ThumbnailView(Qt::Orientation orient, QWidget *parent = nullptr);
     virtual void setDirectoryPath(QString path) override;
     void select(QList<int>) override;
     void select(int) override;
@@ -52,7 +47,9 @@ public:
     int lastSelected();
     void clearSelection();
     void deselect(int index);
+
 public slots:
+    void show();
     void showEvent(QShowEvent *event) override;
     void resetViewport();
     int thumbnailSize();
@@ -61,12 +58,12 @@ public slots:
 
     void addItem();
 
+    virtual void focusOnSelection() = 0;
     virtual void populate(int count) override;
     virtual void setThumbnail(int pos, std::shared_ptr<Thumbnail> thumb) override;
     virtual void insertItem(int index) override;
     virtual void removeItem(int index) override;
     virtual void reloadItem(int index) override;
-
     virtual void setDragHover(int index) override;
 
 signals:
@@ -78,8 +75,6 @@ signals:
     void droppedInto(const QMimeData*, QObject*, int) override;
 
 private:
-    ThumbnailViewOrientation orientation;
-
     QTimer loadTimer;
     bool blockThumbnailLoading;
 
@@ -95,6 +90,7 @@ private:
     QElapsedTimer scrollFrameTimer;
     std::function<void(int)> centerOn;
     QElapsedTimer lastTouchpadScroll;
+    Qt::Orientation mOrientation = Qt::Horizontal;
 
 protected:
     QGraphicsScene scene;
@@ -107,13 +103,14 @@ protected:
 
     QList<int> rangeSelectionSnapshot;
     bool rangeSelection; // true if shift is pressed
+    bool wayland = false;
 
     QRect indicator;
     const int indicatorSize = 2;
 
     int scrollRefreshRate = 16;
     const int SCROLL_DURATION = 120;
-    const float SCROLL_MULTIPLIER = 2.5f;
+    const float WHEEL_SCROLL_MULTIPLIER = 2.5f;
     const float SCROLL_ACCELERATION = 1.4f;
     const int SCROLL_ACCELERATION_THRESHOLD = 50;
 
@@ -131,8 +128,10 @@ protected:
     virtual void removeAll() = 0;
     virtual void updateLayout();
     virtual void fitSceneToContents();
-    virtual void ensureSelectedItemVisible() = 0;
     virtual void updateScrollbarIndicator() = 0;
+
+    void setOrientation(Qt::Orientation _orientation);
+    Qt::Orientation orientation();
 
     void setCropThumbnails(bool);
     void setDrawScrollbarIndicator(bool mode);
@@ -144,7 +143,9 @@ protected:
 
     bool eventFilter(QObject *o, QEvent *ev) override;
     void resizeEvent(QResizeEvent *event) override;
+    void scrollToItem(int index);
     void scrollPrecise(int delta);
+    void scrollByItem(int delta);
     void scrollSmooth(int delta);
     void scrollSmooth(int angleDelta, qreal multiplier, qreal acceleration);
     void scrollSmooth(int angleDelta, qreal multiplier, qreal acceleration, bool additive);

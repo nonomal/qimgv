@@ -24,7 +24,8 @@ public:
     void readSettings();
 
 private:
-    int thumbPadding = 9, thumbMarginX = 2, thumbMarginY = 4;
+    const int thumbPadding = 9;
+    int thumbMarginX = 2, thumbMarginY = 4;
     void updateThumbnailPositions(int start, int end);
     void updateThumbnailPositions();
     void setupLayout();
@@ -32,14 +33,13 @@ private:
 
 public slots:
     virtual void focusOn(int index);
+    virtual void focusOnSelection();
 
 protected:
     virtual void resizeEvent(QResizeEvent *event);
     virtual void updateScrollbarIndicator();
-    void ensureThumbnailVisible(int pos);
     void addItemToLayout(ThumbnailWidget *widget, int pos);
     void removeItemFromLayout(int pos);
     void removeAll();
     ThumbnailWidget *createThumbnailWidget();
-    void ensureSelectedItemVisible();
 };
